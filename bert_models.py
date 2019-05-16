@@ -1184,3 +1184,123 @@ class BertForTokenPronsClassification(BertPreTrainedModel):
             return loss,logits
         else:
             return logits
+
+
+class BertForSequencePronsClassification_v1(BertPreTrainedModel):
+
+    def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
+        super(BertForTokenPronsClassification, self).__init__(config)
+        self.num_labels = num_labels
+        self.bert = BertModel(config)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.attention = Attention(pron_emb_size)
+
+        if do_pron:
+            self.hidden_size = pron_emb_size + config.hidden_size 
+        else:
+            self.hidden_size = config.hidden_size
+
+        self.classifier = nn.Linear(config.hidden_size, num_labels) 
+        self.attention_2 = Attention(config.hidden_size)
+ 
+        
+        self.length_s = max_seq_length
+        self.length_p = max_prons_length
+        self.emb_p = pron_emb_size
+        self.apply(self.init_bert_weights)
+
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, prons=None, prons_mask=None, labels=None):
+        
+        sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
+        # sequence_output: (batch_size, sequence_length, config.hidden_size)
+        #print(prons.shape)
+        #print(prons_mask.shape)
+        #print(sequence_output.shape)
+
+        if prons is not None:
+            
+            #print(prons.shape) # prons: (batch_size, sequence_length, prons_length, pron_emb_size)
+            #pron_output, _ = self.gru(prons.view(-1, self.length_p, self.emb_p)) #self.length_s
+            #print(pron_output.shape)  # pron_output: (batch_size, sequence_length * prons_length, self.emb_p)
+            context = prons.view(-1, self.length_p, self.emb_p)
+            #context = pron_output.contiguous()
+            #print(context.shape)
+            pron_output, _ = self.attention(context, context) # self-attention mechanism
+            pron_output = pron_output.view(-1, self.length_s, self.length_p, self.emb_p)
+            #print(pron_output.shape)
+            pron_output = torch.sum(pron_output, 2)
+            #print(pron_output.shape) # pron_output: (batch_size, sequence_length, self.emb_p)
+            sequence_output = torch.cat((sequence_output,pron_output),2)
+        
+        context = sequence_output
+        sequence_output, _ = self.attention_2(context, context)
+        sequence_output = torch.sum(sequence_output, 1)
+
+        sequence_output = self.dropout(sequence_output)
+        logits = self.classifier(sequence_output)
+
+
+        if labels is not None:
+            loss_fct = CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            return loss, logits
+        else:
+            return logits
+
+class BertForSequencePronsClassification_v2(BertPreTrainedModel):
+
+    def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
+        super(BertForTokenPronsClassification, self).__init__(config)
+        self.num_labels = num_labels
+        self.bert = BertModel(config)
+        self.dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.attention = Attention(pron_emb_size)
+
+        if do_pron:
+            self.hidden_size = pron_emb_size + config.hidden_size 
+        else:
+            self.hidden_size = config.hidden_size
+
+        self.classifier = nn.Linear(config.hidden_size, num_labels) 
+        self.attention_2 = Attention(config.hidden_size)
+ 
+        
+        self.length_s = max_seq_length
+        self.length_p = max_prons_length
+        self.emb_p = pron_emb_size
+        self.apply(self.init_bert_weights)
+
+    def forward(self, input_ids, token_type_ids=None, attention_mask=None, prons=None, prons_mask=None, labels=None):
+        
+        sequence_output, pooled_output = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
+        # sequence_output: (batch_size, sequence_length, config.hidden_size)
+        #print(prons.shape)
+        #print(prons_mask.shape)
+        #print(sequence_output.shape)
+
+        if prons is not None:
+            
+            #print(prons.shape) # prons: (batch_size, sequence_length, prons_length, pron_emb_size)
+            #pron_output, _ = self.gru(prons.view(-1, self.length_p, self.emb_p)) #self.length_s
+            #print(pron_output.shape)  # pron_output: (batch_size, sequence_length * prons_length, self.emb_p)
+            context = prons.view(-1, self.length_p, self.emb_p)
+            pron_output, _ = self.attention(context, context) # self-attention mechanism
+            pron_output = pron_output.view(-1, self.length_s, self.length_p, self.emb_p)
+            pron_output = torch.sum(pron_output, 2) 
+            sequence_output = torch.cat((sequence_output,pron_output),2)
+        
+        context = sequence_output
+        sequence_output, _ = self.attention_2(context, context) # self-attention mechanism
+        sequence_output = torch.sum(sequence_output, 1)
+
+        sequence_output = self.dropout(torch.cat((sequence_output, pooled_output), -1))
+
+        logits = self.classifier(sequence_output)
+
+
+        if labels is not None:
+            loss_fct = CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
+            return loss, logits
+        else:
+            return logits
