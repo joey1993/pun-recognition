@@ -147,10 +147,10 @@ def main():
     else: 
         mark1 = "hete-"
     if args.do_pron:
-        mark2 = "pron-" + str(int(args.pron_emb_size)) + '_'
+        mark2 = "pron-" + str(int(args.pron_emb_size)) + '-'
     else:
         mark2 = ""
-    score_file = "scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '/'
+    score_file = "sc-scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '/'
     if not os.path.isdir(score_file): os.mkdir(score_file)
     args.output_dir = score_file + args.output_dir
 
@@ -376,28 +376,15 @@ def main():
                 logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
                 logits = logits.detach().cpu().numpy()
                 label_ids = label_ids.to('cpu').numpy()
-                input_mask = input_mask.to('cpu').numpy()
-                for i,mask in enumerate(input_mask):
-                    temp_1 =  []
-                    temp_2 = []
-                    for j,m in enumerate(mask):
-                        if j == 0:
-                            continue
-                        try:
-                            if m and label_map[label_ids[i][j]] != "X":
-                                temp_1.append(label_map[label_ids[i][j]])
-                                temp_2.append(label_map[logits[i][j]])
-                            else:
-                                temp_1.pop()
-                                temp_2.pop()
-                                y_true.append(temp_1)
-                                y_pred.append(temp_2)
-                                break
-                        except:
-                            pass
+                print(logits)
+                print(label_ids)
+                y_pred.extend(logits)
+                y_true.extend(label_ids)
 
-            report = classification_report(y_true, y_pred, digits=4)
-            logger.info("\n%s", report)
+            f1_score, recall_score, precision_score  = f1_2d(y_true, y_pred)
+            #report = classification_report(y_true, y_pred, digits=4)
+            #logger.info("\n%s", report)
+            logger.infor("precision: {}, recall:{}, f1:{}".format(precision_score, recall_score, f1_score))
             print("loss: {}".format(tr_loss/nb_tr_examples))
            
             y_pred, y_true = [], []
@@ -420,29 +407,15 @@ def main():
                 logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
                 logits = logits.detach().cpu().numpy()
                 label_ids = label_ids.to('cpu').numpy()
-                input_mask = input_mask.to('cpu').numpy()
-                for i,mask in enumerate(input_mask):
-                    temp_1 =  []
-                    temp_2 = []
-                    for j,m in enumerate(mask):
-                        if j == 0:
-                            continue
-                        if m and label_map[label_ids[i][j]] != "X":
-                            temp_1.append(label_map[label_ids[i][j]])
-                            temp_2.append(label_map[logits[i][j]])
-                        else:
-                            temp_1.pop()
-                            temp_2.pop()
-                            y_true.append(temp_1)
-                            y_pred.append(temp_2)
-                            break
 
-            report = classification_report(y_true, y_pred, digits=4)
-            logger.info("\n%s", report)
-            f1_new = f1_score(y_true, y_pred)
+                y_pred.extend(logits)
+                y_true.extend(label_ids)
+
+            f1_score, recall_score, precision_score  = f1_2d(y_true, y_pred)
+            logger.infor("precision: {}, recall:{}, f1:{}".format(precision_score, recall_score, f1_score))
            
-            if f1_new  > best_score: 
-                best_score = f1_new
+            if f1_score  > best_score: 
+                best_score = f1_score
                 write_scores(score_file + 'true_'+str(cv_index), y_true)
                 write_scores(score_file + 'pred_'+str(cv_index), y_pred)
 
@@ -459,70 +432,6 @@ def main():
         json.dump(model_config,open(os.path.join(args.output_dir,"model_config.json"),"w"))
         # Load a trained model and config that you have fine-tuned
 
-    sys.exit()    
-    model.to(device)
-    #print(model.classifier.weight)
-
-    if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
-        eval_examples = processor.get_dev_examples(args.data_dir)
-        eval_features, prons_map = convert_examples_to_pron_features(
-            eval_examples, label_list, args.max_seq_length, args.max_pron_length, tokenizer, prons_map)
-        logger.info("***** Running evaluation *****") 
-        logger.info("  Num examples = %d", len(eval_examples))
-        logger.info("  Batch size = %d", args.eval_batch_size)
-        all_input_ids = torch.tensor([f.input_ids for f in eval_features], dtype=torch.long)
-        all_input_mask = torch.tensor([f.input_mask for f in eval_features], dtype=torch.long)
-        all_segment_ids = torch.tensor([f.segment_ids for f in eval_features], dtype=torch.long)
-        all_label_ids = torch.tensor([f.label_id for f in eval_features], dtype=torch.long)
-        all_prons_ids = torch.tensor([f.prons_id for f in eval_features], dtype=torch.long)
-        all_prons_att_mask = torch.tensor([f.prons_att_mask for f in eval_features], dtype=torch.long)
-        eval_data = TensorDataset(all_input_ids, all_input_mask, all_segment_ids, all_label_ids, all_prons_ids, all_prons_att_mask)
-        # Run prediction for full data
-        eval_sampler = SequentialSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
-        model.eval()
-        eval_loss, eval_accuracy = 0, 0
-        nb_eval_steps, nb_eval_examples = 0, 0
-        y_true = []
-        y_pred = []
-        label_map = {i : label for i, label in enumerate(label_list,1)}
-        for input_ids, input_mask, segment_ids, label_ids, prons_ids, prons_att_mask in tqdm(eval_dataloader, desc="Evaluating"):
-            prons_emb = prons_embedding(prons_ids).to(device)
-            input_ids = input_ids.to(device)
-            input_mask = input_mask.to(device)
-            segment_ids = segment_ids.to(device)
-            label_ids = label_ids.to(device)
-            prons_ids = prons_ids.to(device)
-            prons_att_mask = prons_att_mask.to(device)
-
-            with torch.no_grad():
-                logits = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
-            
-            logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
-            logits = logits.detach().cpu().numpy()
-            label_ids = label_ids.to('cpu').numpy()
-            input_mask = input_mask.to('cpu').numpy()
-            for i,mask in enumerate(input_mask):
-                temp_1 =  []
-                temp_2 = []
-                for j,m in enumerate(mask):
-                    if j == 0:
-                        continue
-                    if m and label_map[label_ids[i][j]] != "X":
-                        temp_1.append(label_map[label_ids[i][j]])
-                        temp_2.append(label_map[logits[i][j]])
-                    else:
-                        temp_1.pop()
-                        temp_2.pop()
-                        y_true.append(temp_1)
-                        y_pred.append(temp_2)
-                        break
-        report = classification_report(y_true, y_pred,digits=4)
-        output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
-        with open(output_eval_file, "w") as writer:
-            logger.info("***** Eval results *****")
-            logger.info("\n%s", report)
-            writer.write(report)
         
 
 if __name__ == "__main__":

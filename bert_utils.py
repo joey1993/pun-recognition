@@ -104,9 +104,21 @@ class DataProcessor(object):
         raise NotImplementedError()
 
     @classmethod
-    def _read_tsv(cls, input_file, quotechar=None):
+    def _read_csv(cls, input_file, quotechar=None):
         """Reads a tab separated value file."""
         return readfile(input_file)
+
+    @classmethod
+    def _read_tsv(cls, input_file, quotechar=None):
+    """Reads a tab separated value file."""
+    with open(input_file, "r") as f:
+        reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
+        lines = []
+        for line in reader:
+            if sys.version_info[0] == 2:
+                line = list(unicode(cell, 'utf-8') for cell in line)
+            lines.append(line)
+        return lines
 
 
 class NerProcessor(DataProcessor):
@@ -115,17 +127,17 @@ class NerProcessor(DataProcessor):
     def get_train_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "train.txt")), "train")
+            self._read_csv(os.path.join(data_dir, "train.txt")), "train")
     
     def get_dev_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "valid.txt")), "dev")
+            self._read_csv(os.path.join(data_dir, "valid.txt")), "dev")
     
     def get_test_examples(self, data_dir):
         """See base class."""
         return self._create_examples(
-            self._read_tsv(os.path.join(data_dir, "test.txt")), "test")
+            self._read_csv(os.path.join(data_dir, "test.txt")), "test")
     
     def get_labels(self):
         #return ["O", "B-MISC", "I-MISC",  "B-PER", "I-PER", "B-ORG", "I-ORG", "B-LOC", "I-LOC", "X", "[CLS]", "[SEP]"]
