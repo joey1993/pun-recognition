@@ -5,6 +5,9 @@ import numpy as np
 import os
 import random
 import pickle
+from sklearn.metrics import f1_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
 
 np.random.seed(2019)
 
@@ -110,14 +113,14 @@ class DataProcessor(object):
 
     @classmethod
     def _read_tsv(cls, input_file, quotechar=None):
-    """Reads a tab separated value file."""
-    with open(input_file, "r") as f:
-        reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
-        lines = []
-        for line in reader:
-            if sys.version_info[0] == 2:
-                line = list(unicode(cell, 'utf-8') for cell in line)
-            lines.append(line)
+        """Reads a tab separated value file."""
+        with open(input_file, "r") as f:
+            reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
+            lines = []
+            for line in reader:
+                if sys.version_info[0] == 2:
+                    line = list(unicode(cell, 'utf-8') for cell in line)
+                lines.append(line)
         return lines
 
 
@@ -177,7 +180,7 @@ class ScProcessor(DataProcessor):
             text_b = None
             prons = line[2] 
             label = line[0]
-            examples.append(InputSCExample(guid=guid, text_a=text_a, text_b=text_b, prons=prons, label=label))
+            examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, prons=prons, label=label))
         return examples   
 
 processors = {"ner":NerProcessor,
@@ -361,7 +364,8 @@ def convert_examples_to_pron_features(examples, label_list, max_seq_length, max_
 def convert_examples_to_pron_SC_features(examples, label_list, max_seq_length, max_pron_length, tokenizer, prons_map):
     """Loads a data file into a list of `InputBatch`s."""
 
-    label_map = {label : i for i, label in enumerate(label_list,1)}
+    label_map = {label : i for i, label in enumerate(label_list)}
+    print(label_map)
     
     features = []
     for (ex_index,example) in enumerate(examples):
@@ -488,3 +492,6 @@ def embed_extend(embeddings, length):
 def write_scores(file_output, y):
     with open(file_output, 'wb') as f:
         pickle.dump(y, f)
+
+def f1_2d(tmp2, tmp1):
+    return f1_score(tmp2, tmp1), recall_score(tmp2,tmp1), precision_score(tmp2,tmp1)

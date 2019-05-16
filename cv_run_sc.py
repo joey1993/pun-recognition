@@ -15,7 +15,7 @@ import torch.nn.functional as F
 # from pytorch_pretrained_bert.modeling import (CONFIG_NAME, WEIGHTS_NAME,
 #                                               BertConfig,
 #                                               BertForTokenClassification)
-from bert_models import BertForTokenClassification, BertForSequencePronsClassification, BertConfig, WEIGHTS_NAME, CONFIG_NAME
+from bert_models import BertForTokenClassification, BertForSequencePronsClassification_v2, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
 from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
@@ -191,7 +191,7 @@ def main():
 
     processor = processors[task_name]()
     label_list = processor.get_labels()
-    num_labels = len(label_list) + 1
+    num_labels = len(label_list)
 
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
 
@@ -220,7 +220,7 @@ def main():
         
         # Prepare model
         cache_dir = args.cache_dir if args.cache_dir else os.path.join(str(PYTORCH_PRETRAINED_BERT_CACHE), 'distributed_{}'.format(args.local_rank))
-        model = BertForSequencePronsClassification.from_pretrained(args.bert_model,
+        model = BertForSequencePronsClassification_v2.from_pretrained(args.bert_model,
                   cache_dir=cache_dir,
                   num_labels=num_labels,
                   max_seq_length=args.max_seq_length,
@@ -330,7 +330,7 @@ def main():
 
         model.train()
         best_score = 0
-        label_map = {i : label for i, label in enumerate(label_list,1)}
+        label_map = {i : label for i, label in enumerate(label_list)}
         #print(label_map)
         #sys.exit()
         logger.info("cv: {}".format(cv_index))
@@ -373,18 +373,19 @@ def main():
                     optimizer.zero_grad()
                     global_step += 1
 
-                logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
+                logits = torch.argmax(F.log_softmax(logits,dim=-1),dim=-1)
                 logits = logits.detach().cpu().numpy()
                 label_ids = label_ids.to('cpu').numpy()
-                print(logits)
-                print(label_ids)
+                # print("")
+                # print(logits)
+                # print(label_ids)
                 y_pred.extend(logits)
                 y_true.extend(label_ids)
 
             f1_score, recall_score, precision_score  = f1_2d(y_true, y_pred)
             #report = classification_report(y_true, y_pred, digits=4)
             #logger.info("\n%s", report)
-            logger.infor("precision: {}, recall:{}, f1:{}".format(precision_score, recall_score, f1_score))
+            logger.info("precision, recall, f1: {}, {}, {}".format(precision_score, recall_score, f1_score))
             print("loss: {}".format(tr_loss/nb_tr_examples))
            
             y_pred, y_true = [], []
@@ -404,7 +405,7 @@ def main():
                 with torch.no_grad():
                     logits = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
                 
-                logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
+                logits = torch.argmax(F.log_softmax(logits,dim=-1),dim=-1)
                 logits = logits.detach().cpu().numpy()
                 label_ids = label_ids.to('cpu').numpy()
 
@@ -412,7 +413,7 @@ def main():
                 y_true.extend(label_ids)
 
             f1_score, recall_score, precision_score  = f1_2d(y_true, y_pred)
-            logger.infor("precision: {}, recall:{}, f1:{}".format(precision_score, recall_score, f1_score))
+            logger.info("precision, recall, f1: {}, {}, {}".format(precision_score, recall_score, f1_score))
            
             if f1_score  > best_score: 
                 best_score = f1_score
@@ -427,8 +428,8 @@ def main():
         output_config_file = os.path.join(args.output_dir, CONFIG_NAME)
         with open(output_config_file, 'w') as f:
             f.write(model_to_save.config.to_json_string())
-        label_map = {i : label for i, label in enumerate(label_list,1)}    
-        model_config = {"bert_model":args.bert_model,"do_lower":args.do_lower_case,"max_seq_length":args.max_seq_length,"num_labels":len(label_list)+1,"label_map":label_map}
+        label_map = {i : label for i, label in enumerate(label_list)}    
+        model_config = {"bert_model":args.bert_model,"do_lower":args.do_lower_case,"max_seq_length":args.max_seq_length,"num_labels":len(label_list),"label_map":label_map}
         json.dump(model_config,open(os.path.join(args.output_dir,"model_config.json"),"w"))
         # Load a trained model and config that you have fine-tuned
 

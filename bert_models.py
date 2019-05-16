@@ -1189,7 +1189,7 @@ class BertForTokenPronsClassification(BertPreTrainedModel):
 class BertForSequencePronsClassification_v1(BertPreTrainedModel):
 
     def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
-        super(BertForTokenPronsClassification, self).__init__(config)
+        super(BertForSequencePronsClassification_v1, self).__init__(config)
         self.num_labels = num_labels
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
@@ -1250,7 +1250,7 @@ class BertForSequencePronsClassification_v1(BertPreTrainedModel):
 class BertForSequencePronsClassification_v2(BertPreTrainedModel):
 
     def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
-        super(BertForTokenPronsClassification, self).__init__(config)
+        super(BertForSequencePronsClassification_v2, self).__init__(config)
         self.num_labels = num_labels
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
@@ -1261,8 +1261,8 @@ class BertForSequencePronsClassification_v2(BertPreTrainedModel):
         else:
             self.hidden_size = config.hidden_size
 
-        self.classifier = nn.Linear(config.hidden_size, num_labels) 
-        self.attention_2 = Attention(config.hidden_size)
+        self.classifier = nn.Linear(config.hidden_size+self.hidden_size, num_labels) 
+        self.attention_2 = Attention(self.hidden_size)
  
         
         self.length_s = max_seq_length
