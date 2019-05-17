@@ -18,15 +18,15 @@ import torch.nn.functional as F
 from bert_models import BertForTokenClassification, BertForTokenPronsClassification, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
-from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
+from pytorch_pretrained_bert.optimization import BertAdam#, warmup_linear
 from pytorch_pretrained_bert.tokenization import BertTokenizer
-from seqeval.metrics import classification_report, f1_score, recall_score, precision_score
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 from bert_utils import *
 from sklearn.model_selection import KFold
+from seqeval.metrics import classification_report, f1_score, recall_score, precision_score
 
 
 
@@ -364,12 +364,12 @@ def main():
                 nb_tr_examples += input_ids.size(0)
                 nb_tr_steps += 1
                 if (step + 1) % args.gradient_accumulation_steps == 0:
-                    if args.fp16:
-                        # modify learning rate with special warm up BERT uses
-                        # if args.fp16 is False, BertAdam is used that handles this automatically
-                        lr_this_step = args.learning_rate * warmup_linear(global_step/num_train_optimization_steps, args.warmup_proportion)
-                        for param_group in optimizer.param_groups:
-                            param_group['lr'] = lr_this_step
+                    #if args.fp16:
+                    #    # modify learning rate with special warm up BERT uses
+                    #    # if args.fp16 is False, BertAdam is used that handles this automatically
+                    #    lr_this_step = args.learning_rate * warmup_linear(global_step/num_train_optimization_steps, args.warmup_proportion)
+                    #    for param_group in optimizer.param_groups:
+                    #        param_group['lr'] = lr_this_step
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1

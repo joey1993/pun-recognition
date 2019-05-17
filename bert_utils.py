@@ -66,7 +66,7 @@ def readfile(filename):
     return format :
     [ ['EU', 'B-ORG'], ['rejects', 'O'], ['German', 'B-MISC'], ['call', 'O'], ['to', 'O'], ['boycott', 'O'], ['British', 'B-MISC'], ['lamb', 'O'], ['.', 'O'] ]
     '''
-    f = open(filename)
+    f = open(filename,encoding='utf-8')
     data = []
     sentence = []
     label= []
@@ -114,7 +114,7 @@ class DataProcessor(object):
     @classmethod
     def _read_tsv(cls, input_file, quotechar=None):
         """Reads a tab separated value file."""
-        with open(input_file, "r") as f:
+        with open(input_file, "r", encoding='utf-8') as f:
             reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
             lines = []
             for line in reader:
@@ -180,6 +180,7 @@ class ScProcessor(DataProcessor):
             text_b = None
             prons = line[2] 
             label = line[0]
+            if label == "-1": label = "0"
             examples.append(InputExample(guid=guid, text_a=text_a, text_b=text_b, prons=prons, label=label))
         return examples   
 
@@ -372,7 +373,11 @@ def convert_examples_to_pron_SC_features(examples, label_list, max_seq_length, m
         textlist = example.text_a.split(' ')
         label_ids = label_map[example.label]
         pronslist = [x.split(',') for x in example.prons.split(' ')]
-        assert(len(textlist) == len(pronslist))
+        #assert(len(textlist) == len(pronslist))
+        if len(textlist) != len(pronslist):
+            print(textlist)
+            print(pronslist)
+            sys.exit()
         tokens = []
         prons = []
         prons_mask = []

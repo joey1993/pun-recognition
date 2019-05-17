@@ -18,7 +18,7 @@ import torch.nn.functional as F
 from bert_models import BertForTokenClassification, BertForSequencePronsClassification_v2, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
-from pytorch_pretrained_bert.optimization import BertAdam, warmup_linear
+from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from seqeval.metrics import classification_report, f1_score, recall_score, precision_score
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
@@ -144,13 +144,21 @@ def main():
     
     if "homo" in args.data_dir:
         mark1 = "homo-"
-    else: 
+    elif "hete" in args.data_dir: 
         mark1 = "hete-"
+    else: 
+        mark1 = "potd-"
+    if "com" in args.data_dir:
+        mark3 = "/com/"
+    elif "lower" in args.data_dir:
+        mark3 = "/lower/"
+    else:
+        mark3 = "/potd/"
     if args.do_pron:
         mark2 = "pron-" + str(int(args.pron_emb_size)) + '-'
     else:
         mark2 = ""
-    score_file = "sc-scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '/'
+    score_file = "scores"+ mark3 +"sc/sc-scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '-' + str(args.seed) + '/'
     if not os.path.isdir(score_file): os.mkdir(score_file)
     args.output_dir = score_file + args.output_dir
 
@@ -363,12 +371,6 @@ def main():
                 nb_tr_examples += input_ids.size(0)
                 nb_tr_steps += 1
                 if (step + 1) % args.gradient_accumulation_steps == 0:
-                    if args.fp16:
-                        # modify learning rate with special warm up BERT uses
-                        # if args.fp16 is False, BertAdam is used that handles this automatically
-                        lr_this_step = args.learning_rate * warmup_linear(global_step/num_train_optimization_steps, args.warmup_proportion)
-                        for param_group in optimizer.param_groups:
-                            param_group['lr'] = lr_this_step
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
