@@ -1240,7 +1240,7 @@ class BertForTokenPronsClassification_v2(BertPreTrainedModel):
                 loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
             return loss,logits
         else:
-            if prons:
+            if prons is not None:
                 return logits,attention_scores
             else:
                 return logits

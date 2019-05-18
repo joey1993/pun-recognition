@@ -500,3 +500,7 @@ def write_scores(file_output, y):
 
 def f1_2d(tmp2, tmp1):
     return f1_score(tmp2, tmp1), recall_score(tmp2,tmp1), precision_score(tmp2,tmp1)
+
+
+def visualize(label_ids, input_ids, prons_att_mask, att):
+    return

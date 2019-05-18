@@ -220,8 +220,9 @@ def main():
         prons_att_mask = prons_att_mask.to(device)
 
         if not args.do_pron: prons_emb = None
-
-        logits,att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
+        
+        with torch.no_grad():
+            logits,att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
         
         logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
         logits = logits.detach().cpu().numpy()
@@ -249,8 +250,8 @@ def main():
                     y_pred.append(temp_2)
                     break
 
-        report = classification_report(y_true, y_pred, digits=4)
-        logger.info("\n%s", report)
+    report = classification_report(y_true, y_pred, digits=4)
+    logger.info("\n%s", report)
 
 if __name__ == "__main__":
     main()
