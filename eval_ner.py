@@ -232,7 +232,7 @@ def main():
         prons_att_mask = prons_att_mask.to('cpu').numpy() #(batch_size, seq_len, pron_len)
         att = att.to('cpu').numpy() #(batch_size, seq_len, pron_len)
 
-        visualize(label_ids, input_ids, prons_att_mask, att)
+        visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map)
 
         for i,mask in enumerate(input_mask):
             temp_1 =  []
