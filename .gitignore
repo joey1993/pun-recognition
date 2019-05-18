@@ -102,6 +102,7 @@ models/
 *.sh
 emb/
 scores/
+scores-*
 
 #model
 core
