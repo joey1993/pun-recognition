@@ -495,7 +495,10 @@ def main():
             prons_att_mask = prons_att_mask.to(device)
 
             with torch.no_grad():
-                logits = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
+                if args.do_pron:
+                    logits, att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
+                else:
+                    logits = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
             
             logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
             logits = logits.detach().cpu().numpy()
