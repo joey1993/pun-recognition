@@ -3,31 +3,13 @@ import torch.nn as nn
 
 
 class Local_attention(nn.Module):
-    """ Applies attention mechanism on the `context` using the `query`.
-    **Thank you** to IBM for their initial implementation of :class:`Attention`. Here is
-    their `License
-    <https://github.com/IBM/pytorch-seq2seq/blob/master/LICENSE>`__.
-    Args:
-        dimensions (int): Dimensionality of the query and context.
-        attention_type (str, optional): How to compute the attention score:
-            * dot: :math:`score(H_j,q) = H_j^T q`
-            * general: :math:`score(H_j, q) = H_j^T W_a q`
-    Example:
-         >>> attention = Attention(256)
-         >>> query = torch.randn(5, 1, 256)
-         >>> context = torch.randn(5, 5, 256)
-         >>> output, weights = attention(query, context)
-         >>> output.size()
-         torch.Size([5, 1, 256])
-         >>> weights.size()
-         torch.Size([5, 1, 5])
-    """
+
 
     def __init__(self, dimensions):
         super(Local_attention, self).__init__()
 
         self.linear_in = nn.Linear(dimensions, dimensions * 2, bias=False)
-        self.att_vec = torch.rand(dimensions * 2, 1)
+        self.att_vec = torch.rand(dimensions * 2, 1).cuda()
         self.linear_out = nn.Linear(dimensions * 2, dimensions, bias=False)
         self.softmax = nn.Softmax(dim=1)
         self.tanh = nn.Tanh()

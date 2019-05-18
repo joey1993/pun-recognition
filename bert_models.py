@@ -1189,7 +1189,7 @@ class BertForTokenPronsClassification(BertPreTrainedModel):
 class BertForTokenPronsClassification_v2(BertPreTrainedModel):
 
     def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
-        super(BertForTokenPronsClassification, self).__init__(config)
+        super(BertForTokenPronsClassification_v2, self).__init__(config)
         self.num_labels = num_labels
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
@@ -1198,7 +1198,7 @@ class BertForTokenPronsClassification_v2(BertPreTrainedModel):
             self.classifier = nn.Linear(config.hidden_size + self.hidden_size, num_labels) 
         else:
             self.classifier = nn.Linear(config.hidden_size, num_labels) 
-        self.attention = Local_Attention(self.hidden_size)
+        self.attention = Local_attention(self.hidden_size)
         self.length_s = max_seq_length
         self.length_p = max_prons_length
         self.emb_p = pron_emb_size
@@ -1365,11 +1365,11 @@ class BertForSequencePronsClassification_v2(BertPreTrainedModel):
 class BertForSequencePronsClassification_v3(BertPreTrainedModel):
 
     def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
-        super(BertForSequencePronsClassification_v2, self).__init__(config)
+        super(BertForSequencePronsClassification_v3, self).__init__(config)
         self.num_labels = num_labels
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.attention = Local_Attention(pron_emb_size)
+        self.attention = Local_attention(pron_emb_size)
 
         if do_pron:
             self.hidden_size = pron_emb_size + config.hidden_size 
