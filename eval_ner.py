@@ -221,8 +221,9 @@ def main():
 
         if not args.do_pron: prons_emb = None
         
-        with torch.no_grad():
-            logits,att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
+        #with torch.no_grad():
+        logits,att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
+
         
         logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
         logits = logits.detach().cpu().numpy()
@@ -230,9 +231,10 @@ def main():
         input_mask = input_mask.to('cpu').numpy()
         input_ids = input_ids.to('cpu').numpy()
         prons_att_mask = prons_att_mask.to('cpu').numpy() #(batch_size, seq_len, pron_len)
-        att = att.to('cpu').numpy() #(batch_size, seq_len, pron_len)
+        #att = att.detach().cpu().numpy() #(batch_size, seq_len, pron_len)
+        prons_ids = prons_ids.to('cpu').numpy()
 
-        visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map)
+        #visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map, tokenizer)
 
         for i,mask in enumerate(input_mask):
             temp_1 =  []
