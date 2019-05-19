@@ -234,7 +234,8 @@ def main():
                   max_seq_length=args.max_seq_length,
                   max_prons_length=args.max_pron_length, 
                   pron_emb_size=args.pron_emb_size,
-                  do_pron=args.do_pron)
+                  do_pron=args.do_pron,
+                  device=device)
 
         #print(model.classifier.weight.requires_grad)
         #print(model.classifier.weight)
