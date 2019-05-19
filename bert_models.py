@@ -1367,7 +1367,7 @@ class BertForSequencePronsClassification_v2(BertPreTrainedModel):
 
 class BertForSequencePronsClassification_v3(BertPreTrainedModel):
 
-    def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
+    def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron, device):
         super(BertForSequencePronsClassification_v3, self).__init__(config)
         self.num_labels = num_labels
         self.bert = BertModel(config)
@@ -1381,6 +1381,7 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
 
         self.classifier = nn.Linear(config.hidden_size+self.hidden_size, num_labels) 
         self.attention_2 = Attention(self.hidden_size)
+        self.att_vec = torch.rand(pron_emb_size * 2, 1, device=device, requires_grad=True)
  
         
         self.length_s = max_seq_length
@@ -1401,7 +1402,7 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
             #print(prons.shape) # prons: (batch_size, sequence_length, prons_length, pron_emb_size)
             #pron_output, _ = self.gru(prons.view(-1, self.length_p, self.emb_p)) #self.length_s
             #print(pron_output.shape)  # pron_output: (batch_size, sequence_length * prons_length, self.emb_p)
-            att_vec = torch.rand(dimensions * 2, 1, device=input_ids.device, requires_grad=True)
+            
             context = prons.view(-1, self.length_p, self.emb_p)
             pron_output, attention_scores_1 = self.attention(context, att_vec) # local-attention mechanism
             pron_output = pron_output.view(-1, self.length_s, self.emb_p)
@@ -1418,6 +1419,6 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            return loss, logits, att_vec
+            return loss, logits, self.att_vec
         else:
             return logits, attention_scores_2
