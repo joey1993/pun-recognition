@@ -1401,8 +1401,9 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
             #print(prons.shape) # prons: (batch_size, sequence_length, prons_length, pron_emb_size)
             #pron_output, _ = self.gru(prons.view(-1, self.length_p, self.emb_p)) #self.length_s
             #print(pron_output.shape)  # pron_output: (batch_size, sequence_length * prons_length, self.emb_p)
+            att_vec = torch.rand(dimensions * 2, 1, device=input_ids.device, requires_grad=True)
             context = prons.view(-1, self.length_p, self.emb_p)
-            pron_output, attention_scores_1 = self.attention(context) # local-attention mechanism
+            pron_output, attention_scores_1 = self.attention(context, att_vec) # local-attention mechanism
             pron_output = pron_output.view(-1, self.length_s, self.emb_p)
             sequence_output = torch.cat((sequence_output,pron_output),2)
         
@@ -1417,6 +1418,6 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            return loss, logits
+            return loss, logits, att_vec
         else:
             return logits, attention_scores_2

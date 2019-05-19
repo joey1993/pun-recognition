@@ -216,7 +216,6 @@ def main():
         input_mask = input_mask.to(device)
         segment_ids = segment_ids.to(device)
         label_ids = label_ids.to(device)
-        prons_ids = prons_ids.to(device)
         prons_att_mask = prons_att_mask.to(device)
 
         if not args.do_pron: prons_emb = None

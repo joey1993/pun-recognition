@@ -356,7 +356,7 @@ def main():
                 input_ids, input_mask, segment_ids, label_ids, prons_ids, prons_att_mask = batch
                 prons_emb = prons_embedding(prons_ids.detach().cpu()).to(device)
                 if not args.do_pron: prons_emb = None
-                loss,logits = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask, label_ids)
+                loss,logits,att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask, label_ids)
                 if n_gpu > 1:
                     loss = loss.mean() # mean() to average on multi-gpu.
                 if args.gradient_accumulation_steps > 1:
@@ -374,6 +374,8 @@ def main():
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
+
+                print(att.detach().cpu().numpy())
 
                 logits = torch.argmax(F.log_softmax(logits,dim=-1),dim=-1)
                 logits = logits.detach().cpu().numpy()
