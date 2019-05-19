@@ -158,7 +158,7 @@ def main():
         mark2 = "pron-" + str(int(args.pron_emb_size)) + '-'
     else:
         mark2 = ""
-    score_file = "scores"+ mark3 +"sc/sc-scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '-' + str(args.seed) + '/'
+    score_file = "scores/local-att"+ mark3 +"sc/sc-scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '-' + str(args.seed) + '/'
     if not os.path.isdir(score_file): os.mkdir(score_file)
     args.output_dir = score_file + args.output_dir
 
