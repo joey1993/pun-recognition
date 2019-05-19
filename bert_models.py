@@ -34,6 +34,7 @@ from torch import nn
 from torch.nn import CrossEntropyLoss
 from attention import Attention
 from local_attention import Local_attention
+from torch.nn.parameter import Parameter
 #from torch.nn import distance
 
 from file_utils import cached_path
@@ -1381,7 +1382,7 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
 
         self.classifier = nn.Linear(config.hidden_size+self.hidden_size, num_labels) 
         self.attention_2 = Attention(self.hidden_size)
-        self.att_vec = torch.rand(pron_emb_size * 2, 1, device=device, requires_grad=True)
+        self.att_vec = Parameter(torch.rand(pron_emb_size * 2, 1, device=device, requires_grad=True))
  
         
         self.length_s = max_seq_length
@@ -1401,7 +1402,6 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
             
             #print(prons.shape) # prons: (batch_size, sequence_length, prons_length, pron_emb_size)
             #pron_output, _ = self.gru(prons.view(-1, self.length_p, self.emb_p)) #self.length_s
-            #print(pron_output.shape)  # pron_output: (batch_size, sequence_length * prons_length, self.emb_p)
             
             context = prons.view(-1, self.length_p, self.emb_p)
             pron_output, attention_scores_1 = self.attention(context, self.att_vec) # local-attention mechanism
