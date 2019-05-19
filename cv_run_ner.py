@@ -140,16 +140,22 @@ def main():
         ptvsd.enable_attach(address=(args.server_ip, args.server_port), redirect_output=True)
         ptvsd.wait_for_attach()
     
-    processors = {"ner":NerProcessor}
     if "homo" in args.data_dir:
         mark1 = "homo-"
     else: 
         mark1 = "hete-"
     if args.do_pron:
-        mark2 = "pron-" + str(int(args.pron_emb_size)) + '_'
+        mark2 = "pron-" + str(int(args.pron_emb_size)) + '-'
     else:
         mark2 = ""
-    score_file = "scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '/'
+    if "com" in args.data_dir:
+        mark3 = "/com/"
+    elif "lower" in args.data_dir:
+        mark3 = "/lower/"
+    else:
+        mark3 = "/potd/"
+
+    score_file = "scores/local-att"+ mark3 +"ner/ner-scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '/'
     if not os.path.isdir(score_file): os.mkdir(score_file)
     args.output_dir = score_file + args.output_dir
 
@@ -225,7 +231,8 @@ def main():
                   max_seq_length=args.max_seq_length,
                   max_prons_length=args.max_pron_length, 
                   pron_emb_size=args.pron_emb_size,
-                  do_pron=args.do_pron)
+                  do_pron=args.do_pron,
+                  device=device)
 
         #print(model.classifier.weight.requires_grad)
         #print(model.classifier.weight)

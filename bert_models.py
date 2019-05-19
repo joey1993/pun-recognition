@@ -1189,7 +1189,7 @@ class BertForTokenPronsClassification(BertPreTrainedModel):
 
 class BertForTokenPronsClassification_v2(BertPreTrainedModel):
 
-    def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron):
+    def __init__(self, config, num_labels, max_seq_length, max_prons_length, pron_emb_size, do_pron, device):
         super(BertForTokenPronsClassification_v2, self).__init__(config)
         self.num_labels = num_labels
         self.bert = BertModel(config)
@@ -1199,6 +1199,7 @@ class BertForTokenPronsClassification_v2(BertPreTrainedModel):
             self.classifier = nn.Linear(config.hidden_size + self.hidden_size, num_labels) 
         else:
             self.classifier = nn.Linear(config.hidden_size, num_labels) 
+        self.att_vec = Parameter(torch.rand(pron_emb_size * 2, 1, device=device, requires_grad=True))
         self.attention = Local_attention(self.hidden_size)
         self.length_s = max_seq_length
         self.length_p = max_prons_length
@@ -1220,7 +1221,7 @@ class BertForTokenPronsClassification_v2(BertPreTrainedModel):
             #print(pron_output.shape)  # pron_output: (batch_size, sequence_length * prons_length, self.hidden_size)
             context = prons.view(-1, self.length_p, self.hidden_size)
             #print(context.shape)
-            pron_output, attention_scores = self.attention(context) # local attention mechanism
+            pron_output, attention_scores = self.attention(context,self.att_vec) # local attention mechanism
             pron_output = pron_output.view(-1, self.length_s, self.hidden_size)
             attention_scores = attention_scores.view(-1, self.length_s, self.length_p)
             #print(pron_output.shape) # pron_output: (batch_size, sequence_length, self.hidden_size)
@@ -1419,6 +1420,6 @@ class BertForSequencePronsClassification_v3(BertPreTrainedModel):
         if labels is not None:
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            return loss, logits, self.att_vec
+            return loss, logits
         else:
             return logits, attention_scores_2

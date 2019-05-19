@@ -376,8 +376,6 @@ def main():
                     optimizer.zero_grad()
                     global_step += 1
 
-                print(att.detach().cpu().numpy())
-
                 logits = torch.argmax(F.log_softmax(logits,dim=-1),dim=-1)
                 logits = logits.detach().cpu().numpy()
                 label_ids = label_ids.to('cpu').numpy()

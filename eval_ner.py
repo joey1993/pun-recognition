@@ -175,7 +175,8 @@ def main():
               max_seq_length=args.max_seq_length,
               max_prons_length=args.max_pron_length, 
               pron_emb_size=args.pron_emb_size,
-              do_pron=args.do_pron)
+              do_pron=args.do_pron,
+              device=device)
     model.load_state_dict(torch.load(output_model_file))
 
     prons_map = {}
