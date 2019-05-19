@@ -164,7 +164,7 @@ def main():
     task_name = args.task_name.lower()
     processor = processors[task_name]()
     label_list = processor.get_labels()
-    num_labels = len(label_list) + 1
+    num_labels = len(label_list)
 
     tokenizer = BertTokenizer.from_pretrained(args.bert_model, do_lower_case=args.do_lower_case)
     output_model_file = os.path.join(args.model_dir, WEIGHTS_NAME+'_'+str(args.weight))
@@ -209,7 +209,7 @@ def main():
     model.eval()
     y_true = []
     y_pred = []
-    label_map = {i : label for i, label in enumerate(label_list,1)}
+    label_map = {i : label for i, label in enumerate(label_list)}
     for input_ids, input_mask, segment_ids, label_ids, prons_ids, prons_att_mask in tqdm(eval_dataloader, desc="Evaluating"):
         prons_emb = prons_embedding(prons_ids).to(device)
         input_ids = input_ids.to(device)
@@ -224,34 +224,21 @@ def main():
         with torch.no_grad():
             logits,att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
         
-        logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
+        logits = torch.argmax(F.log_softmax(logits,dim=-1),dim=-1)
         logits = logits.detach().cpu().numpy()
         label_ids = label_ids.to('cpu').numpy()
         input_mask = input_mask.to('cpu').numpy()
         input_ids = input_ids.to('cpu').numpy()
-        prons_att_mask = prons_att_mask.to('cpu').numpy() #(batch_size, seq_len, pron_len)
-        att = att.to('cpu').numpy() #(batch_size, seq_len, pron_len)
+        att = att.to('cpu').numpy() #(batch_size, seq_len, seq_len)
 
-        visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map)
 
-        for i,mask in enumerate(input_mask):
-            temp_1 =  []
-            temp_2 = []
-            for j,m in enumerate(mask):
-                if j == 0:
-                    continue
-                if m and label_map[label_ids[i][j]] != "X":
-                    temp_1.append(label_map[label_ids[i][j]])
-                    temp_2.append(label_map[logits[i][j]])
-                else:
-                    temp_1.pop()
-                    temp_2.pop()
-                    y_true.append(temp_1)
-                    y_pred.append(temp_2)
-                    break
+        visualize_self(logits, label_ids, input_ids, input_mask, att, tokenizer)
 
-    report = classification_report(y_true, y_pred, digits=4)
-    logger.info("\n%s", report)
+        y_pred.extend(logits)
+        y_true.extend(label_ids)
+
+    f1_score, recall_score, precision_score  = f1_2d(y_true, y_pred)
+    logger.info("precision, recall, f1: {}, {}, {}".format(precision_score, recall_score, f1_score))
 
 if __name__ == "__main__":
     main()

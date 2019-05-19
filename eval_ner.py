@@ -234,7 +234,7 @@ def main():
         att = att.detach().cpu().numpy() #(batch_size, seq_len, pron_len)
         prons_ids = prons_ids.to('cpu').numpy()
 
-        visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map, tokenizer)
+        visualize_local(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map, tokenizer)
 
         for i,mask in enumerate(input_mask):
             temp_1 =  []

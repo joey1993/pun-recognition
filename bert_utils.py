@@ -503,7 +503,7 @@ def f1_2d(tmp2, tmp1):
     return f1_score(tmp2, tmp1), recall_score(tmp2,tmp1), precision_score(tmp2,tmp1)
 
 
-def visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map, tokenizer):
+def visualize_local(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map, tokenizer):
     """
     torch.Size([8, 128])
     torch.Size([8, 128])
@@ -516,7 +516,7 @@ def visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, labe
 
 
 
-    f = open('pron_viz.json', 'a')
+    f = open('results/pron_viz.json', 'a')
     results = {}
     for i in range(len(label_ids)):
 
@@ -524,7 +524,7 @@ def visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, labe
 
             ran = random.random()
 
-            if label_ids[i][j] != 0 and label_map[label_ids[i][j]] == label_map[logits[i][j]] and (ran > 0.9):#label_map[label_ids[i][j]] == "P" or 
+            if label_ids[i][j] != 0 and label_map[label_ids[i][j]] == label_map[logits[i][j]] and label_map[label_ids[i][j]] == "P":
                 mask = prons_att_mask[i][j]
                 score = att[i][j]
 
@@ -545,3 +545,37 @@ def visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, labe
     json.dump(results, f)
     f.write('\n')
     return
+
+
+def visualize_self(logits, label_ids, input_ids, input_mask, att, tokenizer):
+    """
+    torch.Size(8)
+    torch.Size(8)
+    torch.Size([8, 128])
+    torch.Size([8, 128, 128])
+    """
+    f = open('results/token_viz.json', 'a')
+    results = {}
+    for i in range(len(input_ids)):
+
+        if label_ids[i] == logits[i] and label_ids[i] == 1:
+
+            try:
+                N = input_mask[i].index(0)
+                ids = input_ids[:N]
+            except:
+                ids = input_ids
+
+            tokens = tokenizer.convert_ids_to_tokens(input_ids[i])
+
+            results['sent_'+str(i)] = tokens
+
+            for j in range(len(tokens)):
+
+                results[token +'_'+ str(j)] = att[i][j]
+
+    json.dump(results, f)
+    f.write('\n')
+
+    return
+
