@@ -503,7 +503,7 @@ def f1_2d(tmp2, tmp1):
     return f1_score(tmp2, tmp1), recall_score(tmp2,tmp1), precision_score(tmp2,tmp1)
 
 
-def visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map):
+def visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, label_map, prons_map, tokenizer):
     """
     torch.Size([8, 128])
     torch.Size([8, 128])
@@ -512,25 +512,36 @@ def visualize(logits, label_ids, input_ids, prons_ids, prons_att_mask, att, labe
     torch.Size([8, 128, 5])
     torch.Size([8, 128, 5])
     """
-    prons_map = {i: pron for pron,i in prons_map}
-    f.open('pron_viz.json', 'a')
+    prons_map = {int(prons_map[pron]): pron for pron in prons_map}
+
+
+
+    f = open('pron_viz.json', 'a')
     results = {}
     for i in range(len(label_ids)):
 
-        for j in range(len(batch)):
+        for j in range(len(label_ids[i])):
 
-            if label_map[label_ids[i][j]] != logits[label_ids[i][j]] or label_map[label_ids[i][j]] != "P": continue
+            ran = random.random()
 
-            mask = prons_att_mask[i][j]
-            score = att[i][j]
+            if label_ids[i][j] != 0 and label_map[label_ids[i][j]] == label_map[logits[i][j]] and (ran > 0.9):#label_map[label_ids[i][j]] == "P" or 
+                mask = prons_att_mask[i][j]
+                score = att[i][j]
 
-            results['sent'] = tokenizer.convert_ids_to_tokens(input_ids[i])
-            results['start'] = input_ids[i][j]
-            results['pron'] = {}
+                tmp = tokenizer.convert_ids_to_tokens(input_ids[i])
+                try:
+                    N = tmp.index('[PAD]')
+                    results['sent'] = tmp[:N]
+                except:
+                    result['sent'] = tmp
+                    
+                results['start'] = tokenizer.convert_ids_to_tokens([int(input_ids[i][j])])[0]
+                results['pron'] = {}
 
-            for k,m in enumerate(mask):
-                if m == 0: break
-                results['pron'][prons_map[prons_ids[i][j][k]]] = score[k]
+                for k,m in enumerate(mask):
+                    if m == 0: break
+                    results['pron'][prons_map[prons_ids[i][j][k]]] = float(score[k])
 
     json.dump(results, f)
+    f.write('\n')
     return
