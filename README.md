@@ -13,21 +13,34 @@ Computer Science Department, University of California, Los Angeles
 - `python3`
 - `pip3 install -r requirements.txt`
 
-# Run
+# Training for Pun Detection
 
 ```Bash
-python run_ner.py 
---data_dir=data/ 
---bert_model=bert-base-cased 
---task_name=ner 
---output_dir=out 
---max_seq_length=128 
+python cv_run_sc.py 
+--data_dir data/semeval2017/data_with_pronunciation/pd-hete/ 
+--bert_model bert-base-cased 
+--task_name sc 
+--output_dir out 
+--max_seq_length 128 
 --do_train 
 --num_train_epochs 5 
---do_eval --warmup_proportion=0.4
+--do_eval 
+--pron_emb_size 32 
+--do_pron 
 ```
 
-# Inference
+# Training for Pun Location
 
-
-
+```Bash
+python cv_run_ner.py 
+--data_dir data/semeval2017/data_with_pronunciation/pl-homo/ 
+--bert_model bert-base-cased 
+--task_name ner 
+--output_dir out 
+--max_seq_length 128 
+--do_train 
+--num_train_epochs 10 
+--do_eval 
+--pron_emb_size 16 
+--do_pron 
+```
