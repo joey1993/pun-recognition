@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from bert_models import BertForTokenPronsClassification_v2, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
-from pytorch_pretrained_bert.optimization import BertAdam#, warmup_linear
+from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
@@ -185,7 +185,7 @@ def main():
     eval_examples = processor.get_train_examples(args.data_dir)
     eval_features, prons_map = convert_examples_to_pron_features(
         eval_examples, label_list, args.max_seq_length, args.max_pron_length, tokenizer, prons_map)
-    print(prons_map)
+
     prons_emb = embed_extend(prons_emb, len(prons_map))
     prons_emb = torch.tensor(prons_emb, dtype=torch.float)
     prons_embedding = torch.nn.Embedding.from_pretrained(prons_emb)
@@ -222,9 +222,7 @@ def main():
 
         if not args.do_pron: prons_emb = None
         
-        #with torch.no_grad():
         logits,att = model(input_ids, segment_ids, input_mask, prons_emb, prons_att_mask)
-
         
         logits = torch.argmax(F.log_softmax(logits,dim=2),dim=2)
         logits = logits.detach().cpu().numpy()
