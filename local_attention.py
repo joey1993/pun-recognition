@@ -39,7 +39,6 @@ class Local_attention(nn.Module):
         attention_scores = context.matmul(att_vec)        
         attention_weights = self.masked_softmax(attention_scores)
 
-        #print(attention_weights[:3])
         mix = torch.bmm(attention_weights.transpose(1,2).contiguous(), context).view(batch_size, 2 * dimensions)
         attention_weights = attention_weights.view(batch_size, pron_len)
 

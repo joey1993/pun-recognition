@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from bert_models import BertForTokenPronsClassification_v2, BertConfig, WEIGHTS_NAME, CONFIG_NAME
 from file_utils import PYTORCH_PRETRAINED_BERT_CACHE
 
-from pytorch_pretrained_bert.optimization import BertAdam#, warmup_linear
+from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.tokenization import BertTokenizer
 from torch.utils.data import (DataLoader, RandomSampler, SequentialSampler,
                               TensorDataset)
@@ -141,21 +141,12 @@ def main():
         ptvsd.wait_for_attach()
     
     if "homo" in args.data_dir:
-        mark1 = "homo-"
+        mark = "homo-"
     else: 
-        mark1 = "hete-"
-    if args.do_pron:
-        mark2 = "pron-" + str(int(args.pron_emb_size)) + '-'
-    else:
-        mark2 = ""
-    if "com" in args.data_dir:
-        mark3 = "/com/"
-    elif "lower" in args.data_dir:
-        mark3 = "/lower/"
-    else:
-        mark3 = "/potd/"
+        mark = "hete-"
 
-    score_file = "scores/local-att"+ mark3 +"ner/ner-scores-" + mark1 + mark2 + str(int(args.num_train_epochs)) + '/'
+
+    score_file = "scores/"+ mark + '/'
     if not os.path.isdir(score_file): os.mkdir(score_file)
     args.output_dir = score_file + args.output_dir
 
@@ -234,9 +225,6 @@ def main():
                   do_pron=args.do_pron,
                   device=device)
 
-        #print(model.classifier.weight.requires_grad)
-        #print(model.classifier.weight)
-
         if args.fp16:
             model.half()
         model.to(device)
@@ -281,22 +269,23 @@ def main():
         global_step = 0
         nb_tr_steps = 0
         tr_loss = 0
-    #if args.do_train:
+
+        # load pretrained embeddings for phonemes
         prons_map = {}
         prons_map, prons_emb = embed_load('./data/pron.'+str(args.pron_emb_size)+'.vec')
-        #print(prons_map)
+
+        # convert texts to trainable features
         train_features, prons_map = convert_examples_to_pron_features(
             train_examples, label_list, args.max_seq_length, args.max_pron_length, tokenizer, prons_map)
         eval_features, prons_map = convert_examples_to_pron_features(
             eval_examples, label_list, args.max_seq_length, args.max_pron_length, tokenizer, prons_map)
-        print(prons_map)
         prons_emb = embed_extend(prons_emb, len(prons_map))
         prons_emb = torch.tensor(prons_emb, dtype=torch.float)
-        #sys.exit()
-        #prons_embedding = torch.nn.Embedding(len(prons_map)+1, args.pron_emb_size) #initialize embeddings
+
         prons_embedding = torch.nn.Embedding.from_pretrained(prons_emb)
         prons_embedding.weight.requires_grad=False
 
+        # build training set
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_examples))
         logger.info("  Batch size = %d", args.train_batch_size)
@@ -316,9 +305,7 @@ def main():
             train_sampler = DistributedSampler(train_data)
         train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
 
-
-#        eval_examples = processor.get_dev_examples(args.data_dir)
-
+        # build test set
         logger.info("***** Running evaluation *****") 
         logger.info("  Num examples = %d", len(eval_examples))
         logger.info("  Batch size = %d", args.eval_batch_size)
@@ -333,22 +320,17 @@ def main():
         eval_sampler = SequentialSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
 
-
         model.train()
         best_score = 0
         label_map = {i : label for i, label in enumerate(label_list,1)}
-        #print(label_map)
-        #sys.exit()
+
+        # start cross-validation training
         logger.info("cv: {}".format(cv_index))
         for index in trange(int(args.num_train_epochs), desc="Epoch"):
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
             y_true, y_pred = [], []
 
-            #if index == 11:
-            #    for param in model.bert.parameters():
-            #        param.requires_grad = False
-            #model.train()
             for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration")):
                 batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids, prons_ids, prons_att_mask = batch
@@ -369,12 +351,6 @@ def main():
                 nb_tr_examples += input_ids.size(0)
                 nb_tr_steps += 1
                 if (step + 1) % args.gradient_accumulation_steps == 0:
-                    #if args.fp16:
-                    #    # modify learning rate with special warm up BERT uses
-                    #    # if args.fp16 is False, BertAdam is used that handles this automatically
-                    #    lr_this_step = args.learning_rate * warmup_linear(global_step/num_train_optimization_steps, args.warmup_proportion)
-                    #    for param_group in optimizer.param_groups:
-                    #        param_group['lr'] = lr_this_step
                     optimizer.step()
                     optimizer.zero_grad()
                     global_step += 1
@@ -404,11 +380,10 @@ def main():
 
             report = classification_report(y_true, y_pred, digits=4)
             logger.info("\n%s", report)
-            print("loss: {}".format(tr_loss/nb_tr_examples))
+            logger.info("loss: {}".format(tr_loss/nb_tr_examples))
            
             y_pred, y_true = [], []
             logger.info("Evaluating...")
-            #model.eval()
             for input_ids, input_mask, segment_ids, label_ids, prons_ids, prons_att_mask in tqdm(eval_dataloader, desc="Evaluating"):
                 prons_emb = prons_embedding(prons_ids).to(device)
                 input_ids = input_ids.to(device)
@@ -456,7 +431,7 @@ def main():
                 write_scores(score_file + 'pred_'+str(cv_index), y_pred)
 
             
-        # Save a trained model and the associated configuration
+        # save a trained model and the associated configuration
         model_to_save = model.module if hasattr(model, 'module') else model  # Only save the model it-self
         output_model_file = os.path.join(args.output_dir, WEIGHTS_NAME + '_' + str(cv_index))
         torch.save(model_to_save.state_dict(), output_model_file)
@@ -466,11 +441,9 @@ def main():
         label_map = {i : label for i, label in enumerate(label_list,1)}    
         model_config = {"bert_model":args.bert_model,"do_lower":args.do_lower_case,"max_seq_length":args.max_seq_length,"num_labels":len(label_list)+1,"label_map":label_map}
         json.dump(model_config,open(os.path.join(args.output_dir,"model_config.json"),"w"))
-        # Load a trained model and config that you have fine-tuned
-
-    sys.exit()    
+        # load a trained model and config that you have fine-tuned
+ 
     model.to(device)
-    #print(model.classifier.weight)
 
     if args.do_eval and (args.local_rank == -1 or torch.distributed.get_rank() == 0):
         eval_examples = processor.get_dev_examples(args.data_dir)

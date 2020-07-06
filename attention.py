@@ -58,10 +58,6 @@ class Attention(nn.Module):
         """
         batch_size, output_len, dimensions = query.size()
         query_len = context.size(1)
-        #print(batch_size)
-        #print(output_len)
-        #print(dimensions)
-        #print(query.shape)
         
 
         if self.attention_type == "general":
@@ -75,14 +71,11 @@ class Attention(nn.Module):
         # (batch_size, output_len, query_len)
         attention_scores = torch.bmm(query, context.transpose(1, 2).contiguous())
         #attention_scores = torch.bmm(context.transpose(1, 2).contiguous(), query)
-        #print(attention_scores[:3])
 
         # Compute weights across every context sequence
         attention_scores = attention_scores.view(batch_size * output_len, query_len)
         attention_weights = self.masked_softmax(attention_scores)
         attention_weights = attention_weights.view(batch_size, output_len, query_len)
-
-        #print(attention_weights[:3])
 
         # (batch_size, output_len, query_len) * (batch_size, query_len, dimensions) ->
         # (batch_size, output_len, dimensions)

@@ -61,10 +61,6 @@ def main(argv):
 					 
 
 	p_y = num_pun / float(num_tokens)
-	p_y_x = num_
-	p_x = 
-
-
 
 if __name__ == "__main__":
 	main(sys.argv)
