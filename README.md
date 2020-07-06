@@ -17,7 +17,7 @@ Computer Science Department, University of California, Los Angeles
 
 ```Bash
 python cv_run_sc.py 
---data_dir data/semeval2017/data_with_pronunciation/pd-hete/ 
+--data_dir data/semeval2017/data_with_pronunciation/pd-hete-lower/ 
 --bert_model bert-base-cased 
 --task_name sc 
 --output_dir out 
@@ -33,7 +33,7 @@ python cv_run_sc.py
 
 ```Bash
 python cv_run_ner.py 
---data_dir data/semeval2017/data_with_pronunciation/pl-homo/ 
+--data_dir data/semeval2017/data_with_pronunciation/pl-homo-com/ 
 --bert_model bert-base-cased 
 --task_name ner 
 --output_dir out 
