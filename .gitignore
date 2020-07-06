@@ -94,16 +94,5 @@ logdir/
 # Checkpoint
 checkpoint/
 
-# Data
-data/
-embedding/
-tmp/
-models/
-*.sh
-emb/
-scores/
-scores-*
-results/
-
 #model
 core
