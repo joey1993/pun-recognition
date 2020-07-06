@@ -1,6 +1,6 @@
 
 
-### Pun Detection and Location
+# Pun Detection and Location
 
 ```
 “The Boating Store Had Its Best Sail Ever”: Pronunciation-attentive Contextualized Pun Recognition
@@ -8,12 +8,12 @@ Yichao Zhou, Jyun-yu Jiang, Jieyu Zhao, Kai-Wei Chang and Wei Wang
 Computer Science Department, University of California, Los Angeles
 ```
 
-# Requirements
+## Requirements
 
 - `python3`
 - `pip3 install -r requirements.txt`
 
-# Training for Pun Detection
+## Training for Pun Detection
 
 ```Bash
 python cv_run_sc.py 
@@ -29,7 +29,7 @@ python cv_run_sc.py
 --do_pron 
 ```
 
-# Training for Pun Location
+## Training for Pun Location
 
 ```Bash
 python cv_run_ner.py 
