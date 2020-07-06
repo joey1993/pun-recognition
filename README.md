@@ -23,9 +23,9 @@ python cv_run_sc.py
 --output_dir out 
 --max_seq_length 128 
 --do_train 
---num_train_epochs 5 
+--num_train_epochs 3 
 --do_eval 
---pron_emb_size 32 
+--pron_emb_size 16 
 --do_pron 
 ```
 
@@ -39,7 +39,7 @@ python cv_run_ner.py
 --output_dir out 
 --max_seq_length 128 
 --do_train 
---num_train_epochs 10 
+--num_train_epochs 3 
 --do_eval 
 --pron_emb_size 16 
 --do_pron 
